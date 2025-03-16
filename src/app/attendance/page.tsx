@@ -4,7 +4,6 @@ import {
   getAttendanceHistory,
 } from "./attendance-actions";
 import AttendanceClient from "./attendance-client";
-import Header from "./header";
 import Loading from "./loading";
 
 export default async function AttendancePage() {
@@ -13,8 +12,7 @@ export default async function AttendancePage() {
   const history = await getAttendanceHistory();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
+    <div className="min-h-screen dark:bg-gray-900">
       <main className="p-4">
         <div className="max-w-4xl mx-auto">
           <Suspense fallback={<Loading />}>

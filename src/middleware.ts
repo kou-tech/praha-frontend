@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { auth } from "./auth";
 
-export function middleware(request: NextRequest) {
-  // 認証が必要なパスかチェック
-  if (request.nextUrl.pathname.startsWith("/attendance")) {
-    const token = request.cookies.get("auth-token");
+export default auth((req) => {
+  // 保護されたルートへのアクセスをチェック
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
 
-    if (!token) {
-      // 未認証の場合はログインページにリダイレクト
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
+  // 次のアクセスはログインが必要
+  if (nextUrl.pathname.startsWith("/attendance") && !isLoggedIn) {
+    return NextResponse.redirect(new URL("/login", nextUrl));
+  }
+
+  // ログイン済みユーザーがログインページにアクセスした場合はリダイレクト
+  if (nextUrl.pathname.startsWith("/login") && isLoggedIn) {
+    return NextResponse.redirect(new URL("/attendance", nextUrl));
   }
 
   return NextResponse.next();
-}
+});
 
+// 特定のパスに対してミドルウェアを適用
 export const config = {
-  matcher: "/attendance/:path*",
+  matcher: ["/attendance/:path*", "/login"],
 };
