@@ -13,19 +13,19 @@ const attendanceHistory: AttendanceRecord[] = [];
 
 export async function getAttendanceStatus(): Promise<AttendanceStatus> {
   // 認証チェック
-  const token = (await cookies()).get("auth-token");
-  if (!token) {
-    throw new Error("Unauthorized");
-  }
+  // const token = (await cookies()).get("auth-token");
+  // if (!token) {
+  //   throw new Error("Unauthorized");
+  // }
 
   return currentStatus;
 }
 
 export async function getAttendanceHistory(): Promise<AttendanceRecord[]> {
-  const token = (await cookies()).get("auth-token");
-  if (!token) {
-    throw new Error("Unauthorized");
-  }
+  // const token = (await cookies()).get("auth-token");
+  // if (!token) {
+  //   throw new Error("Unauthorized");
+  // }
 
   return attendanceHistory;
 }
@@ -33,10 +33,10 @@ export async function getAttendanceHistory(): Promise<AttendanceRecord[]> {
 export async function recordAttendance(
   type: AttendanceRecord["type"]
 ): Promise<AttendanceRecord> {
-  const token = (await cookies()).get("auth-token");
-  if (!token) {
-    throw new Error("Unauthorized");
-  }
+  // const token = (await cookies()).get("auth-token");
+  // if (!token) {
+  //   throw new Error("Unauthorized");
+  // }
 
   const record: AttendanceRecord = {
     id: crypto.randomUUID(),
