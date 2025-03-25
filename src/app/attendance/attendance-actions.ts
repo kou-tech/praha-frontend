@@ -1,6 +1,5 @@
 "use server";
 
-import { cookies } from "next/headers";
 import type { AttendanceRecord, AttendanceStatus } from "@/types";
 
 // 実際の環境では、これらの値はデータベースに保存される

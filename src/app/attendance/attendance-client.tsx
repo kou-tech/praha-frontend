@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -12,54 +11,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { AttendanceStatus, AttendanceRecord } from "@/types";
+import { Attendance, AttendanceActionType } from "@/types/supabase";
+import { recordAttendance } from "./action";
 
 interface AttendanceClientProps {
-  initialStatus: AttendanceStatus;
-  initialHistory: AttendanceRecord[];
+  status: Attendance | null;
+  history: {
+    data: Attendance[];
+    count: number;
+    totalPages: number;
+  };
 }
 
 export default function AttendanceClient({
-  initialStatus,
-  initialHistory,
+  status,
+  history,
 }: AttendanceClientProps) {
-  const router = useRouter();
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [status, setStatus] = useState(initialStatus);
-  const [history, setHistory] = useState(initialHistory);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleAttendanceAction = async (type: AttendanceRecord["type"]) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/attendance/record", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ type }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to record attendance");
-      }
-
-      router.refresh(); // サーバーコンポーネントを再フェッチ
-    } catch (error) {
-      console.error("Failed to record attendance:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  const [currentTime] = useState(new Date());
   const formatDateTime = (date: Date) => {
     return date.toLocaleString("ja-JP", {
       year: "numeric",
@@ -71,35 +39,53 @@ export default function AttendanceClient({
     });
   };
 
-  const getStatusText = (status: AttendanceStatus["status"]) => {
+  const getStatusText = (status: AttendanceActionType | null) => {
     switch (status) {
-      case "not_started":
-        return "未出勤";
-      case "working":
-        return "勤務中";
-      case "on_break":
-        return "休憩中";
-      case "finished":
-        return "退勤済み";
-      default:
-        return "";
-    }
-  };
-
-  const getActionText = (type: AttendanceRecord["type"]) => {
-    switch (type) {
       case "clock_in":
-        return "出勤";
+        return "出勤中";
       case "break_start":
-        return "休憩開始";
+        return "休憩中";
       case "break_end":
         return "休憩終了";
       case "clock_out":
-        return "退勤";
+        return "退勤済み";
       default:
-        return "";
+        return "未出勤";
     }
   };
+
+  const getActionText = (status: AttendanceActionType) => {
+    switch (status) {
+      case "clock_in":
+        return "出勤中";
+      case "break_start":
+        return "休憩中";
+      case "break_end":
+        return "休憩終了";
+      case "clock_out":
+        return "退勤済み";
+      default:
+        return "未出勤";
+    }
+  };
+
+  // ボタンの表示条件
+  // - 出勤 (前回が退勤、あるいはレコードがない)
+  // - 休憩開始 (前回が出勤)
+  // - 休憩終了 (前回が休憩開始)
+  // - 退勤(前回が出勤または休憩終了)
+
+  // 出勤できるかどうか
+  const isClockIn = status === null || status?.action === "clock_out";
+  // 休憩開始できるかどうか
+  const isBreakStart = status === null || status?.action === "clock_in";
+  // 休憩終了できるかどうか
+  const isBreakEnd = status === null || status?.action === "break_start";
+  // 退勤できるかどうか
+  const isClockOut =
+    status === null ||
+    status?.action === "clock_in" ||
+    status?.action === "break_end";
 
   return (
     <div className="space-y-6">
@@ -111,32 +97,32 @@ export default function AttendanceClient({
 
           <div className="text-center">
             <p className="text-lg font-semibold">
-              現在の状況: {getStatusText(status.status)}
+              現在の状況: {getStatusText(status?.action ?? null)}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <Button
-              onClick={() => handleAttendanceAction("clock_in")}
-              disabled={isLoading || status.status !== "not_started"}
+              onClick={() => recordAttendance("clock_in")}
+              disabled={!isClockIn}
             >
               出勤
             </Button>
             <Button
-              onClick={() => handleAttendanceAction("break_start")}
-              disabled={isLoading || status.status !== "working"}
+              onClick={() => recordAttendance("break_start")}
+              disabled={!isBreakStart}
             >
               休憩開始
             </Button>
             <Button
-              onClick={() => handleAttendanceAction("break_end")}
-              disabled={isLoading || status.status !== "on_break"}
+              onClick={() => recordAttendance("break_end")}
+              disabled={!isBreakEnd}
             >
               休憩終了
             </Button>
             <Button
-              onClick={() => handleAttendanceAction("clock_out")}
-              disabled={isLoading || status.status !== "working"}
+              onClick={() => recordAttendance("clock_out")}
+              disabled={!isClockOut}
             >
               退勤
             </Button>
@@ -154,12 +140,12 @@ export default function AttendanceClient({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {history.map((record) => (
-              <TableRow key={record.id}>
+            {history.data.map((record) => (
+              <TableRow key={record.attendance_id}>
                 <TableCell>
                   {formatDateTime(new Date(record.timestamp))}
                 </TableCell>
-                <TableCell>{getActionText(record.type)}</TableCell>
+                <TableCell>{getActionText(record.action)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
