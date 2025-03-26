@@ -59,7 +59,6 @@ export async function recordAttendance(action: AttendanceAction) {
   const supabase = await createClient();
 
   const { error } = await supabase.from("attendance").insert({
-    auth_id: user.data.user?.id,
     action: action,
     timestamp: new Date().toISOString(),
   });

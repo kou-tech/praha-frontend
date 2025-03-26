@@ -78,14 +78,12 @@ export default function AttendanceClient({
   // 出勤できるかどうか
   const isClockIn = status === null || status?.action === "clock_out";
   // 休憩開始できるかどうか
-  const isBreakStart = status === null || status?.action === "clock_in";
+  const isBreakStart = status?.action === "clock_in";
   // 休憩終了できるかどうか
-  const isBreakEnd = status === null || status?.action === "break_start";
+  const isBreakEnd = status?.action === "break_start";
   // 退勤できるかどうか
   const isClockOut =
-    status === null ||
-    status?.action === "clock_in" ||
-    status?.action === "break_end";
+    status?.action === "clock_in" || status?.action === "break_end";
 
   return (
     <div className="space-y-6">

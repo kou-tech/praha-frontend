@@ -59,3 +59,30 @@ create trigger on_auth_user_created
 ```txt
 Error [AuthApiError]: Email not confirmed
 ```
+### 解決方法
+次の設定を無効にする。
+Authentication > Email > Confirm email
+
+
+```txt
+Error [AuthApiError]: missing email or phone
+```
+
+```txt
+Error recording attendance: new row violates row-level security policy for table "attendance"
+```
+
+
+```sql
+create policy "Public attendance are visible to everyone."
+on attendance for select
+to anon         -- the Postgres Role (recommended)
+using ( true ); -- the actual Policy
+```
+
+```sql
+create policy "Users can create a attendance."
+on attendance for insert
+to authenticated                          -- the Postgres Role (recommended)
+with check ( (select auth.uid()) = auth_id );
+```
